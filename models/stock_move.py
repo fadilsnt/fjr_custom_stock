@@ -58,13 +58,23 @@ class StockMove(models.Model):
             else:
                 move.container_quantity = 0.0
 
-    # @api.model
     def _search(self, domain, offset=0, limit=None, order=None):
-        if self.env.user.allowed_warehouse_ids:
-            # If the user has specific allowed warehouses, filter by those
-            domain = [('picking_type_id.warehouse_id', 'in', self.env.user.allowed_warehouse_ids.ids)] + domain
-        return super(StockMove, self)._search(domain, offset=offset, limit=limit, order=order)
-    
+        if (
+            self.env.user.allowed_warehouse_ids
+            and not self.env.is_superuser()
+            and not self.env.context.get('bypass_allowed_warehouse')
+        ):
+            warehouse_domain = [
+                ('picking_type_id.warehouse_id', 'in',
+                self.env.user.allowed_warehouse_ids.ids)
+            ]
+
+            domain = expression.AND([
+                warehouse_domain,
+                domain
+            ])
+
+        return super()._search(domain, offset=offset, limit=limit, order=order)
 
     def _set_backdate(self, backdate):
         """
