@@ -1,4 +1,5 @@
 from odoo import models, fields, api, _
+from odoo.osv import expression
 
 class StockMove(models.Model):
     _inherit = 'stock.move'
